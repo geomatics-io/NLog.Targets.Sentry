@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using Moq;
 using NLog.Config;
 using NUnit.Framework;
-using SharpRaven;
-using SharpRaven.Data;
+using Sentry;
+using Sentry.Protocol;
 
 namespace NLog.Targets.Sentry.UnitTests
 {
@@ -40,32 +40,34 @@ namespace NLog.Targets.Sentry.UnitTests
         [Test]
         public void TestBadDsn()
         {
-            Assert.Throws<ArgumentException>(() => new SentryTarget(null) { Dsn = "http://localhost" });
+            Assert.Throws<ArgumentException>(() => SentrySdk.Init("http://localhost"));
         }
 
         [Test]
         public void TestLoggingToSentry()
         {
-            var sentryClient = new Mock<IRavenClient>();
-            ErrorLevel lErrorLevel = ErrorLevel.Debug;
+            SentryLevel lErrorLevel = SentryLevel.Debug;
             IDictionary<string, string> lTags = null;
             Exception lException = null;
 
+            var sentryClient = new Mock<ISentryClient>();
+
             sentryClient
-                .Setup(x => x.CaptureException(It.IsAny<Exception>(), It.IsAny<SentryMessage>(), It.IsAny<ErrorLevel>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<object>()))
-                .Callback((Exception exception, SentryMessage msg, ErrorLevel lvl, IDictionary<string, string> d, object extra) =>
+                .Setup(x => x.CaptureException(It.IsAny<Exception>()))
+                .Callback((Exception exception, SentryEvent msg, SentryLevel lvl, IDictionary<string, string> d, object extra) =>
                 {
                     lException = exception;
                     lErrorLevel = lvl;
                     lTags = d;
                 })
-                .Returns("Done");
-
+                .Returns(new SentryId());
+            
             // Setup NLog
-            var sentryTarget = new SentryTarget(sentryClient.Object)
+            var sentryTarget = new SentryTarget()
             {
-                Dsn = "http://25e27038b1df4930b93c96c170d95527:d87ac60bb07b4be8908845b23e914dae@test/4",
+                Dsn = "https://e80e676a68784007bff7f645d4660188@sentry.io/1337801",
             };
+
             var configuration = new LoggingConfiguration();
             configuration.AddTarget("NLogSentry", sentryTarget);
             configuration.LoggingRules.Add(new LoggingRule("*", LogLevel.Trace, sentryTarget));
@@ -83,59 +85,59 @@ namespace NLog.Targets.Sentry.UnitTests
 
             Assert.IsTrue(lException.Message == "Oh No!");
             Assert.IsTrue(lTags == null);
-            Assert.IsTrue(lErrorLevel == ErrorLevel.Error);
+            Assert.IsTrue(lErrorLevel == SentryLevel.Error);
         }
 
 
 
 
-        [Test]
-        public void TestLoggingToSentry_SendLogEventInfoPropertiesAsTags()
-        {
-            var sentryClient = new Mock<IRavenClient>();
-            ErrorLevel lErrorLevel = ErrorLevel.Debug;
-            IDictionary<string, string> lTags = null;
-            Exception lException = null;
+        //[Test]
+        //public void TestLoggingToSentry_SendLogEventInfoPropertiesAsTags()
+        //{
+        //    var sentryClient = new Mock<IRavenClient>();
+        //    ErrorLevel lErrorLevel = ErrorLevel.Debug;
+        //    IDictionary<string, string> lTags = null;
+        //    Exception lException = null;
 
-            sentryClient
-                .Setup(x => x.CaptureException(It.IsAny<Exception>(), It.IsAny<SentryMessage>(), It.IsAny<ErrorLevel>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<object>()))
-                .Callback((Exception exception, SentryMessage msg, ErrorLevel lvl, IDictionary<string, string> d, object extra) =>
-                {
-                    lException = exception;
-                    lErrorLevel = lvl;
-                    lTags = d;
-                })
-                .Returns("Done");
+        //    sentryClient
+        //        .Setup(x => x.CaptureException(It.IsAny<Exception>(), It.IsAny<SentryMessage>(), It.IsAny<ErrorLevel>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<object>()))
+        //        .Callback((Exception exception, SentryMessage msg, ErrorLevel lvl, IDictionary<string, string> d, object extra) =>
+        //        {
+        //            lException = exception;
+        //            lErrorLevel = lvl;
+        //            lTags = d;
+        //        })
+        //        .Returns("Done");
 
-            // Setup NLog
-            var sentryTarget = new SentryTarget(sentryClient.Object)
-            {
-                Dsn = "http://25e27038b1df4930b93c96c170d95527:d87ac60bb07b4be8908845b23e914dae@test/4",
-                SendLogEventInfoPropertiesAsTags = true,
-            };
-            var configuration = new LoggingConfiguration();
-            configuration.AddTarget("NLogSentry", sentryTarget);
-            configuration.LoggingRules.Add(new LoggingRule("*", LogLevel.Trace, sentryTarget));
-            LogManager.Configuration = configuration;
+        //    // Setup NLog
+        //    var sentryTarget = new SentryTarget(sentryClient.Object)
+        //    {
+        //        Dsn = "http://25e27038b1df4930b93c96c170d95527:d87ac60bb07b4be8908845b23e914dae@test/4",
+        //        SendLogEventInfoPropertiesAsTags = true,
+        //    };
+        //    var configuration = new LoggingConfiguration();
+        //    configuration.AddTarget("NLogSentry", sentryTarget);
+        //    configuration.LoggingRules.Add(new LoggingRule("*", LogLevel.Trace, sentryTarget));
+        //    LogManager.Configuration = configuration;
 
-            var tag1Value = "abcde";
+        //    var tag1Value = "abcde";
 
-            try
-            {
-                throw new Exception("Oh No!");
-            }
-            catch (Exception e)
-            {
-                var logger = LogManager.GetCurrentClassLogger();
+        //    try
+        //    {
+        //        throw new Exception("Oh No!");
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        var logger = LogManager.GetCurrentClassLogger();
 
-                var logEventInfo = LogEventInfo.Create(LogLevel.Error, "default", "Error Message", e);
-                logEventInfo.Properties.Add("tag1", tag1Value);
-                logger.Log(logEventInfo);
-            }
+        //        var logEventInfo = LogEventInfo.Create(LogLevel.Error, "default", "Error Message", e);
+        //        logEventInfo.Properties.Add("tag1", tag1Value);
+        //        logger.Log(logEventInfo);
+        //    }
 
-            Assert.IsTrue(lException.Message == "Oh No!");
-            Assert.IsTrue(lTags != null);
-            Assert.IsTrue(lErrorLevel == ErrorLevel.Error);
-        }
+        //    Assert.IsTrue(lException.Message == "Oh No!");
+        //    Assert.IsTrue(lTags != null);
+        //    Assert.IsTrue(lErrorLevel == ErrorLevel.Error);
+        //}
     }
 }

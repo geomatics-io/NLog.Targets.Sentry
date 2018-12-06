@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("NLog.Targets.Sentry.UnitTests")]
 [assembly: AssemblyDescription("Custom target for NLog enabling you to send logging messages to the Sentry logging service.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Bjarne Riis, Dillon Buchanan")]
+[assembly: AssemblyCompany("Bjarne Riis, Dillon Buchanan, Christian Junk")]
 [assembly: AssemblyProduct("NLog.Targets.Sentry.UnitTests")]
-[assembly: AssemblyCopyright("Copyright © 2015 Bjarne Riis")]
+[assembly: AssemblyCopyright("Copyright © 2015-2018 Bjarne Riis, Christian Junk")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -31,5 +31,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyVersion("2.0.0")]
+[assembly: AssemblyFileVersion("2.0.0")]

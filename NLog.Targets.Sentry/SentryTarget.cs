@@ -1,33 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using NLog.Common;
-using NLog.Config;
-using SharpRaven;
-using SharpRaven.Data;
+﻿#region
 
-// ReSharper disable CheckNamespace
-namespace NLog.Targets
-// ReSharper restore CheckNamespace
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using NLog.Config;
+using Sentry;
+using Sentry.Extensibility;
+using Sentry.Protocol;
+using Sentry.Reflection;
+
+#endregion
+
+namespace NLog.Targets.Sentry
 {
     [Target("Sentry")]
-    public class SentryTarget : TargetWithLayout
+    public sealed class SentryTarget : TargetWithLayout
     {
-        private Dsn dsn;
-        private readonly Lazy<IRavenClient> client;
+        private readonly Func<string, IDisposable> _initAction;
+        private volatile IDisposable _sdkHandle;
+        private readonly object _initSync = new object();
+        internal IHub Hub { get; set; }
+        public bool SendIdentity { get; set; }
 
-        /// <summary>
-        /// Map of NLog log levels to Raven/Sentry log levels
-        /// </summary>
-        protected static readonly IDictionary<LogLevel, ErrorLevel> LoggingLevelMap = new Dictionary<LogLevel, ErrorLevel>
+        internal static readonly (string Name, string Version) NameAndVersion
+            = typeof(SentryTarget).Assembly.GetNameAndVersion();
+
+        private static readonly string ProtocolPackageName = "nuget:" + NameAndVersion.Name;
+
+        private Dsn dsn;
+
+        internal SentryTarget(
+            Func<string, IDisposable> initAction,
+            IHub hubGetter)
         {
-            {LogLevel.Debug, ErrorLevel.Debug},
-            {LogLevel.Error, ErrorLevel.Error},
-            {LogLevel.Fatal, ErrorLevel.Fatal},
-            {LogLevel.Info, ErrorLevel.Info},
-            {LogLevel.Trace, ErrorLevel.Debug},
-            {LogLevel.Warn, ErrorLevel.Warning},
-        };
+            Debug.Assert(initAction != null);
+            Debug.Assert(hubGetter != null);
+
+            _initAction = initAction;
+            Hub = hubGetter;
+        }
+
+        public SentryTarget() : this(SentrySdk.Init, HubAdapter.Instance)
+        {
+        }
 
         /// <summary>
         /// The DSN for the Sentry host
@@ -39,69 +54,120 @@ namespace NLog.Targets
             set { dsn = new Dsn(value); }
         }
 
-        /// <summary>
-        /// Determines whether events with no exceptions will be send to Sentry or not
-        /// </summary>
-        public bool IgnoreEventsWithNoException { get; set; }
+        public string User { get; set; }
 
-        /// <summary>
-        /// Determines whether event properites will be sent to sentry as Tags or not
-        /// </summary>
-        public bool SendLogEventInfoPropertiesAsTags { get; set; }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        public SentryTarget()
-        {
-            client = new Lazy<IRavenClient>(() => new RavenClient(dsn));
-        }
-
-        /// <summary>
-        /// Internal constructor, used for unit-testing
-        /// </summary>
-        /// <param name="ravenClient">A <see cref="IRavenClient"/></param>
-        internal SentryTarget(IRavenClient ravenClient) : this()
-        {
-            client = new Lazy<IRavenClient>(() => ravenClient);
-        }
-
-        /// <summary>
-        /// Writes logging event to the log target.
-        /// </summary>
-        /// <param name="logEvent">Logging event to be written out.</param>
         protected override void Write(LogEventInfo logEvent)
         {
-            try
+            if (logEvent == null)
             {
-                var tags = SendLogEventInfoPropertiesAsTags
-                    ? logEvent.Properties.ToDictionary(x => x.Key.ToString(), x => x.Value.ToString())
-                    : null;
+                return;
+            }
 
-                var extras = SendLogEventInfoPropertiesAsTags
-                    ? null
-                    : logEvent.Properties.ToDictionary(x => x.Key.ToString(), x => x.Value.ToString());
-
-                client.Value.Logger = logEvent.LoggerName;
-
-                // If the log event did not contain an exception and we're not ignoring
-                // those kinds of events then we'll send a "Message" to Sentry
-                if (logEvent.Exception == null && !IgnoreEventsWithNoException)
+            if (!Hub.IsEnabled && _sdkHandle == null)
+            {
+                if (Dsn == null)
                 {
-                    var sentryMessage = new SentryMessage(Layout.Render(logEvent));
-                    client.Value.CaptureMessage(sentryMessage, LoggingLevelMap[logEvent.Level], extra: extras, tags: tags);
+                    return;
                 }
-                else if (logEvent.Exception != null)
+
+                lock (_initSync)
                 {
-                    var sentryMessage = new SentryMessage(logEvent.FormattedMessage);
-                    client.Value.CaptureException(logEvent.Exception, extra: extras, level: LoggingLevelMap[logEvent.Level], message: sentryMessage, tags: tags);
+                    if (_sdkHandle == null)
+                    {
+                        _sdkHandle = _initAction(Dsn);
+                        Debug.Assert(_sdkHandle != null);
+                    }
                 }
             }
-            catch (Exception e)
+
+            var exception = logEvent.Exception;
+            var evt = new SentryEvent(exception)
             {
-                InternalLogger.Error("Unable to send Sentry request: {0}", e.Message);
+                Sdk =
+                {
+                    Name = Constants.SdkName,
+                    Version = NameAndVersion.Version
+                },
+                Logger = logEvent.LoggerName,
+                Level = logEvent.ToSentryLevel()
+            };
+
+            evt.Sdk.AddPackage(ProtocolPackageName, NameAndVersion.Version);
+
+            if (!string.IsNullOrWhiteSpace(logEvent.FormattedMessage))
+            {
+                evt.Message = logEvent.FormattedMessage;
             }
+
+            evt.SetExtras(GetLoggingEventProperties(logEvent));
+
+            if (SendIdentity)
+            {
+                evt.User = new User
+                {
+                    Username = User
+                };
+            }
+
+            Hub.CaptureEvent(evt);
+        }
+
+        private static IEnumerable<KeyValuePair<string, object>> GetLoggingEventProperties(LogEventInfo loggingEvent)
+        {
+            var properties = loggingEvent.Properties;
+            if (properties == null)
+            {
+                yield break;
+            }
+
+            foreach (var key in properties.Keys)
+            {
+                if (!string.IsNullOrWhiteSpace(key as string))
+                {
+                    var value = properties[key];
+                    if (value != null
+                        && (!(value is string stringValue) || !string.IsNullOrWhiteSpace(stringValue)))
+                    {
+                        yield return new KeyValuePair<string, object>((string) key, value);
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(loggingEvent.CallerClassName))
+            {
+                yield return new KeyValuePair<string, object>(nameof(loggingEvent.CallerClassName),
+                    loggingEvent.CallerClassName);
+            }
+
+            if (!string.IsNullOrEmpty(loggingEvent.CallerFilePath))
+            {
+                yield return new KeyValuePair<string, object>(nameof(loggingEvent.CallerFilePath),
+                    loggingEvent.CallerFilePath);
+            }
+
+            if (loggingEvent.CallerLineNumber > 0)
+            {
+                yield return new KeyValuePair<string, object>(nameof(loggingEvent.CallerLineNumber),
+                    loggingEvent.CallerLineNumber);
+            }
+
+            if (!string.IsNullOrEmpty(loggingEvent.CallerMemberName))
+            {
+                yield return new KeyValuePair<string, object>(nameof(loggingEvent.CallerMemberName),
+                    loggingEvent.CallerMemberName);
+            }
+
+            if (loggingEvent.Level != null)
+            {
+                yield return new KeyValuePair<string, object>("nlog-level", loggingEvent.Level.Name);
+            }
+        }
+
+        protected override void CloseTarget()
+        {
+            base.CloseTarget();
+
+            _sdkHandle?.Dispose();
         }
     }
 }
-
