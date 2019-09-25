@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>1.2.0</Version>
+    <Authors>Christian Junk</Authors>
+    <Company>geomatics I/O</Company>
+    <Product />
+    <Description>NLog integration for Sentry - Open-source error tracking that helps developers monitor and fix crashes in real time.</Description>
+    <PackageTags>Sentry GetSentry Error-Reporting Crash-Reporting Exception-Handling Logging NLog</PackageTags>
+    <RepositoryUrl>https://github.com/geomatics-io/NLog.Targets.Sentry</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/geomatics-io/NLog.Targets.Sentry</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NLog" Version="4.6.7" />
+    <PackageReference Include="Sentry" Version="1.2.0" />
+  </ItemGroup>
+
+</Project>
