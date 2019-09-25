@@ -9,12 +9,24 @@
     <Description>NLog integration for Sentry - Open-source error tracking that helps developers monitor and fix crashes in real time.</Description>
     <PackageTags>Sentry GetSentry Error-Reporting Crash-Reporting Exception-Handling Logging NLog</PackageTags>
     <RepositoryUrl>https://github.com/geomatics-io/NLog.Targets.Sentry</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/geomatics-io/NLog.Targets.Sentry</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/geomatics-io</PackageProjectUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/geomatics-io/NLog.Targets.Sentry/netcoreapp2.2/.assets/sentry-nuget.png</PackageIconUrl>
+    <PackageReleaseNotes>https://github.com/geomatics-io/NLog.Targets.Sentry/releases</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseExpression></PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="NLog" Version="4.6.7" />
     <PackageReference Include="Sentry" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
