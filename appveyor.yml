@@ -77,7 +77,7 @@ test: off
 artifacts:
 
   # pushing a single file with environment variable in path and "Deployment name" specified
-  - path: Geomatics.NLog.Targets.Sentry.%APPVEYOR_BUILD_VERSION%.nupkg
+  - path: Geomatics.IO.NLog.Targets.Sentry.%APPVEYOR_BUILD_VERSION%.nupkg
   #  name: NHibernate.JetDriver.dll
 
   # pushing all *.nupkg files in build directory recursively
