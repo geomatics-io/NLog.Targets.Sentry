@@ -1,17 +1,56 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>$id$</id>
+    <!-- Required elements-->
+
+    <!-- The identifier that must be unique within the hosting gallery -->
+    <id>Geomatics.IO.NHibernate.JetDriver</id>
+
+	<!-- The package version number that is used when resolving dependencies -->
     <version>$version$</version>
-    <title>$title$</title>
-    <authors>$author$</authors>
-    <owners>$author$</owners>
+
+    <!-- The description can be used in package manager UI. Note that the
+            nuget.org gallery uses information you add in the portal. -->
+    <description>Custom target for NLog enabling you to send logging messages to the Sentry logging service.</description>
+
+	<!-- Authors contain text that appears directly on the gallery -->
+	<authors>Bjarne Riis, Dillon Buchanan, Christian Junk</authors>
+
+	<!-- Optional elements -->
+    <title>NLog.Targets.Sentry</title>
+    <!-- Owners are typically nuget.org identities that allow gallery
+            users to easily find other packages by the same owners.  -->
+    <owners>christianjunk, geomatics</owners>
+
+    <!-- License and project URLs provide links for the gallery -->
     <licenseUrl>https://github.com/geomatics-io/NLog.Targets.Sentry/blob/master/License.txt</licenseUrl>
     <projectUrl>https://github.com/geomatics-io/NLog.Targets.Sentry</projectUrl>
-    <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>$description$</description>
-    <copyright>$copyright$</copyright>
-    <tags>NLog Sentry Log Logging Logger</tags>
-    <releaseNotes>Updated project to .NET Framework 4.6.2 and to the most current Sentry library.</releaseNotes>
+    <licenseUrl>https://raw.githubusercontent.com/geomatics-io/NLog.Targets.Sentry/master/LICENSE</licenseUrl>
+
+    <!-- The icon is used in Visual Studio's package manager UI -->
+    <iconUrl>https://raw.githubusercontent.com/geomatics-io/NLog.Targets.Sentry/master/NLog.Targets.Sentry.png</iconUrl>
+
+    <!-- If true, this value prompts the user to accept the license when
+            installing the package. -->
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+
+	<!-- Tags appear in the gallery and can be used for tag searches -->
+    <tags>NLog Sentry Log Logging Logger</tags>    
+    
+    <!-- Dependencies are automatically installed when the package is installed -->
+    <dependencies>
+        <group targetFramework=".NETFramework4.6.1">
+            <dependency id="NLog" version="4.5.11" />
+            <dependency id="Sentry" version="1.1.0" />
+        </group>
+    </dependencies>
   </metadata>
+
+  <files>
+    <file src="..\..\.assets\icon.png" target="images\icon.png" />
+    <file src="bin\Release\NLog.Targets.Sentry.dll" target="lib\net461\NLog.Targets.Sentry.dll" />
+    <file src="bin\Release\NLog.Targets.Sentry.pdb" target="lib\net461\NLog.Targets.Sentry.dll.pdb" />
+    <file src="bin\Release\NLog.Targets.Sentry.xml" target="lib\net461\NLog.Targets.Sentry.xml" />
+  </files>
+
 </package>
