@@ -26,3 +26,6 @@ To use the Sentry target, simply add it an extension in the NLog.config file and
 </nlog>
 ```
 The package is also available through NuGet as "NLog.Targets.Sentry".
+
+[![Build status](https://ci.appveyor.com/api/projects/status/cswe9ugeysvtmwbm/branch/development?svg=true)](https://ci.appveyor.com/project/geomatics/nlog-targets-sentry/branch/development)
+[![NuGet version](https://badge.fury.io/nu/Geomatics.IO.NLog.Targets.Sentry.svg)](https://badge.fury.io/nu/Geomatics.IO.NLog.Targets.Sentry)
