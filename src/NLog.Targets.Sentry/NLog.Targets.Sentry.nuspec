@@ -23,9 +23,8 @@
     <owners>christianjunk, geomatics</owners>
 
     <!-- License and project URLs provide links for the gallery -->
-    <licenseUrl>https://github.com/geomatics-io/NLog.Targets.Sentry/blob/master/License.txt</licenseUrl>
-    <projectUrl>https://github.com/geomatics-io/NLog.Targets.Sentry</projectUrl>
     <licenseUrl>https://raw.githubusercontent.com/geomatics-io/NLog.Targets.Sentry/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/geomatics-io/NLog.Targets.Sentry</projectUrl>    
 
     <!-- The icon is used in Visual Studio's package manager UI -->
     <iconUrl>https://raw.githubusercontent.com/geomatics-io/NLog.Targets.Sentry/master/NLog.Targets.Sentry.png</iconUrl>
