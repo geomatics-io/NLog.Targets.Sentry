@@ -4,7 +4,7 @@
     <!-- Required elements-->
 
     <!-- The identifier that must be unique within the hosting gallery -->
-    <id>Geomatics.IO.NHibernate.JetDriver</id>
+    <id>Geomatics.IO.NLog.Targets.Sentry</id>
 
 	<!-- The package version number that is used when resolving dependencies -->
     <version>$version$</version>

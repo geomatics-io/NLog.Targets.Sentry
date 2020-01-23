@@ -1,0 +1,111 @@
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+# version format
+version: 1.1.0-b{build}
+
+# you can use {branch} name in version format too
+# version: 1.0.{build}-{branch}
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+# Build worker image (VM template)
+image: Visual Studio 2019
+
+# scripts that run after cloning repository
+install:
+  appveyor DownloadFile https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+
+# enable patching of AssemblyInfo.* files
+assembly_info:
+  patch: true
+  file: '**\AssemblyInfo.*'
+  assembly_version: "1.1.0"
+  assembly_file_version: "1.1.0.{build}"
+  assembly_informational_version: '1.1.0.{build}-{branch}'
+
+# Automatically register private account and/or project AppVeyor NuGet feeds.
+nuget:
+  account_feed: false
+  project_feed: false
+  disable_publish_on_pr: true     # disable publishing of .nupkg artifacts to account/project feeds for pull request builds
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration: Release
+
+# to add several configurations to build matrix:
+#configuration:
+#  - Debug
+#  - Release
+
+# Build settings, not to be confused with "before_build" and "after_build".
+# "project" is relative to the original build directory and not influenced by directory changes in "before_build".
+build:
+
+  publish_nuget: false             # package projects with .nuspec files and push to artifacts
+  publish_nuget_symbols: false     # generate and publish NuGet symbol packages
+
+# MSBuild verbosity level
+  verbosity: quiet|minimal|normal|detailed
+
+# to run your custom scripts instead of automatic MSBuild
+build_script:
+- cmd: PowerShell -Version 2.0 .\build.ps1
+
+# scripts to run after build (working directory and environment changes are persisted from the previous steps)
+after_build:
+  nuget pack src\NLog.Targets.Sentry\NLog.Targets.Sentry.csproj -Version "%APPVEYOR_BUILD_VERSION%" -Verbosity detailed
+
+#---------------------------------#
+#       tests configuration       #
+#---------------------------------#
+
+# to run tests against only selected assemblies and/or categories
+test: off
+
+#---------------------------------#
+#      artifacts configuration    #
+#---------------------------------#
+
+artifacts:
+
+  # pushing a single file with environment variable in path and "Deployment name" specified
+  - path: Geomatics.NLog.Targets.Sentry.%APPVEYOR_BUILD_VERSION%.nupkg
+  #  name: NHibernate.JetDriver.dll
+
+  # pushing all *.nupkg files in build directory recursively
+  # - path: '**\*.nupkg'
+  # path: src/NHibernate.JetDriver/*.nupkg
+
+#---------------------------------#
+#     deployment configuration    #
+#---------------------------------#
+
+deploy:
+  provider: NuGet
+  api_key:
+    secure: KuQB3K8IEsSekRz4kUOX5gsGt5LHhaG0Q8JFcK8z1TDcsiDYCuSPVMovfYHge4C6
+  skip_symbols: false
+  artifact: Geomatics.IO.NLog.Targets.Sentry.%APPVEYOR_BUILD_VERSION%.nupkg
+
+
+#---------------------------------#
+#         notifications           #
+#---------------------------------#
+
+notifications:
+
+  # Email
+  - provider: Email
+    to:
+      - christian.junk@geomatics.io
+    on_build_success: true
+    on_build_failure: true
+    on_build_status_changed: false
